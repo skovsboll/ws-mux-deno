@@ -15,6 +15,10 @@ const context: { file?: Deno.FsFile } = {
   file: undefined,
 };
 
+function log(msg: string): void {
+  console.log("SRV: " + msg);
+}
+
 const sockets = new Set<WebSocket>();
 
 Deno.serve({ port: parseInt(Deno.args[1]) }, (req: Request) => {
@@ -24,26 +28,27 @@ Deno.serve({ port: parseInt(Deno.args[1]) }, (req: Request) => {
   const { socket, response } = Deno.upgradeWebSocket(req);
 
   socket.addEventListener("open", () => {
-    console.log("a client connected!");
+    log("a client connected!");
     sockets.add(socket);
     if (!context.file) {
-      console.log(`Opening ${Deno.args[0]}!`);
+      log(`Opening ${Deno.args[0]}!`);
       const file = context.file = Deno.openSync(Deno.args[0], {
         write: true,
         create: true,
         truncate: false,
       });
       socket.addEventListener("message", (event) => {
+        log(event.data);
         file.writeSync(new TextEncoder().encode(event.data + "\n"));
       });
     }
   });
 
   socket.addEventListener("close", () => {
-    console.log("client disconnected!");
+    log("client disconnected!");
     sockets.delete(socket);
     if (sockets.size === 0 && context.file) {
-      console.log(`Closing ${Deno.args[0]}!`);
+      log(`Closing ${Deno.args[0]}!`);
       context.file.close();
       context.file = undefined;
     }

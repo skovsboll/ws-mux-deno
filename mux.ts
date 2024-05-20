@@ -7,6 +7,10 @@ const servers = new Map<
 >();
 const tunnels = new Map<WebSocket, WebSocket>();
 
+function log(msg: string): void {
+  console.log("MUX: " + msg);
+}
+
 Deno.serve((req: Request) => {
   const match = MODEL_ROUTE.exec(req.url);
   if (match) {
@@ -20,10 +24,13 @@ Deno.serve((req: Request) => {
     const { socket: client, response } = Deno.upgradeWebSocket(req);
 
     client.onopen = async () => {
-      console.log(`client opened connection to ${modelName}`);
-      if (!servers.get(modelName)) {
+      log(`client opened connection to ${modelName}`);
+
+      let entry = servers.get(modelName);
+
+      if (!entry) {
         const port = 9000 + servers.size;
-        console.log(`starting a new server on port ${port}`);
+        log(`starting a new server on port ${port}`);
         const args = [
           "run",
           "--allow-net",
@@ -40,63 +47,61 @@ Deno.serve((req: Request) => {
         });
 
         const process: Deno.ChildProcess = command.spawn();
-
-        // wait until process.stdout prints "Listening on http://localhost:9000/"
-        // const reader = process.stdout.getReader();
-        // const result = await reader.read();
-        // const output = new TextDecoder().decode(result.value);
-        // console.log(output);
-
         process.stdout.pipeTo(Deno.stdout.writable);
-
-        servers.set(modelName, { process, port });
+        entry = { process, port };
+        servers.set(modelName, entry);
       }
 
-      const entry = servers.get(modelName);
-      if (entry) {
-        const serverUrl = "ws://localhost:" + entry.port;
-        console.log(`opening new tunnel to server at ${serverUrl}`);
+      const serverUrl = "ws://localhost:" + entry.port;
+      log(`opening new tunnel to server at ${serverUrl}`);
 
-        // Connect with retry until its readystate is open
-        let serverConnection = new WebSocket(serverUrl);
+      // Connect with retry until its readystate is open
+      let serverConnection = new WebSocket(serverUrl);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      while (
+        serverConnection.readyState === WebSocket.CLOSING ||
+        serverConnection.readyState === WebSocket.CLOSED
+      ) {
+        log("server not ready yet. waiting...");
         await new Promise((resolve) => setTimeout(resolve, 1000));
-        while (
-          serverConnection.readyState === WebSocket.CLOSING ||
-          serverConnection.readyState === WebSocket.CLOSED
-        ) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          serverConnection.close();
-          serverConnection = new WebSocket(serverUrl);
-        }
-        serverConnection.onmessage = (ev: MessageEvent<string>) => {
-          ev.data && client.send(ev.data);
-          return ev.data;
-        };
-        tunnels.set(client, serverConnection);
+        serverConnection.close();
+        serverConnection = new WebSocket(serverUrl);
       }
+      serverConnection.onmessage = (ev: MessageEvent<string>) => {
+        ev.data && client.send(ev.data);
+        return ev.data;
+      };
+      tunnels.set(client, serverConnection);
     };
 
     client.onmessage = (event) => {
-      const serverSocket = tunnels.get(client);
+      const tunnel = tunnels.get(client);
 
-      if (serverSocket && serverSocket.readyState === WebSocket.OPEN) {
-        serverSocket.send(event.data);
+      if (tunnel && tunnel.readyState === WebSocket.OPEN) {
+        log("forwarding " + event.data + " to server");
+        tunnel.send(event.data);
+        log("and to other clients");
+        Array.from(tunnels.keys()).filter((c) => c !== client).forEach(
+          (other) => {
+            other.send(event.data);
+          },
+        );
       } else {
-        console.error("server connection not ready!", serverSocket);
+        log("server connection not ready!" + tunnel);
       }
     };
 
     client.onclose = () => {
-      console.log(`client closed connection to ${modelName}`);
+      log(`client closed connection to ${modelName}`);
       const tunnel = tunnels.get(client);
       if (tunnel) tunnel.close();
       tunnels.delete(client);
       if (tunnels.size === 0) {
-        console.log("last client disconnected");
+        log("last client disconnected");
         const server = servers.get(modelName);
         if (server) {
           server.process.kill();
-          console.log("server shut down");
+          log("server shut down");
         }
       }
     };
