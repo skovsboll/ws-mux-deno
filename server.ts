@@ -32,15 +32,20 @@ Deno.serve({ port: parseInt(Deno.args[1]) }, (req: Request) => {
     sockets.add(socket);
     if (!context.file) {
       log(`Opening ${Deno.args[0]}!`);
-      const file = context.file = Deno.openSync(Deno.args[0], {
+      context.file = Deno.openSync("models/" + Deno.args[0], {
         write: true,
         create: true,
         truncate: false,
       });
-      socket.addEventListener("message", (event) => {
-        log(event.data);
-        file.writeSync(new TextEncoder().encode(event.data + "\n"));
-      });
+    }
+  });
+
+  socket.addEventListener("message", (event) => {
+    log(event.data);
+    if (!context.file) {
+      log("¡File not open!");
+    } else {
+      context.file.writeSync(new TextEncoder().encode(event.data + "\n"));
     }
   });
 
