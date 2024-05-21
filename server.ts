@@ -55,6 +55,7 @@ Deno.serve({ port: parseInt(Deno.args[1]) }, (req: Request) => {
       log(`Closing ${Deno.args[0]}!`);
       context.file.close();
       context.file = undefined;
+      Deno.exit();
     }
   });
 

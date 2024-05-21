@@ -92,7 +92,7 @@ Deno.serve((req: Request) => {
       }
     };
 
-    client.onclose = () => {
+    client.onclose = async () => {
       log(`client closed connection to ${modelName}`);
       const tunnel = tunnels.get(client);
       if (tunnel) tunnel.close();
@@ -101,7 +101,7 @@ Deno.serve((req: Request) => {
         log("last client disconnected");
         const server = servers.get(modelName);
         if (server) {
-          server.process.kill();
+          await server.process.output;
           log("server shut down");
         }
       }
