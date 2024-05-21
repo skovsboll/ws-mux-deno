@@ -27,17 +27,16 @@ Deno.serve((req: Request) => {
       if (!entry) {
         const port = 9000 + servers.size;
         log(`starting a new server on port ${port}`);
-        const args = [
-          "run",
-          "--allow-net",
-          "--allow-write",
-          "./server.ts",
-          modelName,
-          port.toString(),
-        ];
 
         const command = new Deno.Command(Deno.execPath(), {
-          args,
+          args: [
+            "run",
+            "--allow-net",
+            "--allow-write",
+            "./server.ts",
+            modelName,
+            port.toString(),
+          ],
           stdin: "piped",
           stdout: "piped",
         });
@@ -79,7 +78,7 @@ Deno.serve((req: Request) => {
 
         // If you want the server to relay messages to other clients,
         // comment out from here...
-        log("and to other clients");
+        log("...and to other clients");
         Array.from(tunnels.keys()).filter((c) => c !== client).forEach(
           (other) => {
             other.send(event.data);

@@ -2,7 +2,11 @@
 
 A simple websocket multiplexer in Deno.
 
-# Run
+## Pre-requisites
+
+https://deno.com/
+
+## Running
 
 In a shell:
 
