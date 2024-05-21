@@ -76,12 +76,16 @@ Deno.serve((req: Request) => {
       if (tunnel && tunnel.readyState === WebSocket.OPEN) {
         log("forwarding " + event.data + " to server");
         tunnel.send(event.data);
+
+        // If you want the server to relay messages to other clients,
+        // comment out from here...
         log("and to other clients");
         Array.from(tunnels.keys()).filter((c) => c !== client).forEach(
           (other) => {
             other.send(event.data);
           },
         );
+        // ...to here
       } else {
         log("server connection not ready! waiting...");
         await new Promise((resolve) => setTimeout(resolve, 1000));
