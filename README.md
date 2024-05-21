@@ -28,3 +28,4 @@ Do the same from another browser and watch the messages sent go through the mux,
 
 The other file, server.ts, is started by mux.ts, not directly. It takes the file name and port number as arguments so each file has its own port number.
 
+When the last client disconnects, the server process will be killed so save resources.
