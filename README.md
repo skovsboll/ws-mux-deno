@@ -26,3 +26,5 @@ ws.send("Mjallo")
 
 Do the same from another browser and watch the messages sent go through the mux, into the server, and written to the `models/garbage.txt` file.
 
+The other file, server.ts, is started by mux.ts, not directly. It takes the file name and port number as arguments so each file has its own port number.
+
