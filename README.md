@@ -4,7 +4,11 @@ A simple websocket multiplexer in Deno.
 
 # Run
 
+In a shell:
+
+```bash
 ./mux.ts
+```
 
 Then connect a websocket from any browser using the console:
 
