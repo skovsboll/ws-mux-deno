@@ -7,10 +7,6 @@ const servers = new Map<
 >();
 const tunnels = new Map<WebSocket, WebSocket>();
 
-function log(msg: string): void {
-  console.log("MUX: " + msg);
-}
-
 Deno.serve((req: Request) => {
   const match = MODEL_ROUTE.exec(req.url);
   if (match) {
@@ -74,7 +70,7 @@ Deno.serve((req: Request) => {
       tunnels.set(client, serverConnection);
     };
 
-    client.onmessage = (event) => {
+    client.onmessage = async (event) => {
       const tunnel = tunnels.get(client);
 
       if (tunnel && tunnel.readyState === WebSocket.OPEN) {
@@ -87,7 +83,9 @@ Deno.serve((req: Request) => {
           },
         );
       } else {
-        log("server connection not ready!" + tunnel);
+        log("server connection not ready! waiting...");
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await client.onmessage!(event);
       }
     };
 
@@ -109,3 +107,8 @@ Deno.serve((req: Request) => {
     return response;
   } else return new Response(null, { status: 404 });
 });
+
+function log(msg: string): void {
+  const coloredGreenMsg = "\x1b[32m" + "MUX: " + msg + "\x1b[0m";
+  console.log(coloredGreenMsg);
+}

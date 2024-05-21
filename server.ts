@@ -15,10 +15,6 @@ const context: { file?: Deno.FsFile } = {
   file: undefined,
 };
 
-function log(msg: string): void {
-  console.log("SRV: " + msg);
-}
-
 const sockets = new Set<WebSocket>();
 
 Deno.serve({ port: parseInt(Deno.args[1]) }, (req: Request) => {
@@ -30,6 +26,7 @@ Deno.serve({ port: parseInt(Deno.args[1]) }, (req: Request) => {
   socket.addEventListener("open", () => {
     log("a client connected!");
     sockets.add(socket);
+
     if (!context.file) {
       log(`Opening ${Deno.args[0]}!`);
       context.file = Deno.openSync("models/" + Deno.args[0], {
@@ -42,6 +39,7 @@ Deno.serve({ port: parseInt(Deno.args[1]) }, (req: Request) => {
 
   socket.addEventListener("message", (event) => {
     log(event.data);
+
     if (!context.file) {
       log("¡File not open!");
     } else {
@@ -52,6 +50,7 @@ Deno.serve({ port: parseInt(Deno.args[1]) }, (req: Request) => {
   socket.addEventListener("close", () => {
     log("client disconnected!");
     sockets.delete(socket);
+
     if (sockets.size === 0 && context.file) {
       log(`Closing ${Deno.args[0]}!`);
       context.file.close();
@@ -61,3 +60,8 @@ Deno.serve({ port: parseInt(Deno.args[1]) }, (req: Request) => {
 
   return response;
 });
+
+function log(msg: string): void {
+  const coloredBlueMsg = "\x1b[34m" + "SRV: " + msg + "\x1b[0m";
+  console.log(coloredBlueMsg);
+}
