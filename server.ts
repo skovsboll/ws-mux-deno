@@ -41,7 +41,7 @@ Deno.serve({ port: parseInt(Deno.args[1]) }, (req: Request) => {
     log(event.data);
 
     if (!context.file) {
-      log("¡File not open!");
+      error("¡File not open!");
     } else {
       context.file.writeSync(new TextEncoder().encode(event.data + "\n"));
     }
@@ -55,14 +55,20 @@ Deno.serve({ port: parseInt(Deno.args[1]) }, (req: Request) => {
       log(`Closing ${Deno.args[0]}!`);
       context.file.close();
       context.file = undefined;
-      Deno.exit();
+      log("Exiting!");
+      Deno.exit(0);
     }
   });
 
   return response;
 });
 
-function log(msg: string): void {
-  const coloredBlueMsg = "\x1b[34m" + "SRV: " + msg + "\x1b[0m";
-  console.log(coloredBlueMsg);
+export function log(msg: string): void {
+  const coloredGreenMsg = "\x1b[32m" + "SRV: " + msg + "\x1b[0m";
+  console.log(coloredGreenMsg);
+}
+
+export function error(msg: string): void {
+  const coloredRedMsg = "\x1b[31m" + "SRV: " + msg + "\x1b[0m";
+  console.log(coloredRedMsg);
 }
